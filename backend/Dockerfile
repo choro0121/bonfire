@@ -13,5 +13,4 @@ RUN go build main.go
 FROM alpine:latest
 COPY --from=builder /app /app
 
-ENV PORT=${PORT}
 CMD /app/main
