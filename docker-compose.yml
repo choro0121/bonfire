@@ -2,9 +2,12 @@ version: '3.8'
 
 services:
   pgsql:
+    container_name: pgsql-container
     image: postgres:alpine
     ports:
       - 15432:5432
+    networks:
+      - pgsql-network
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
@@ -12,12 +15,18 @@ services:
     volumes:
       - ./pgsql-data:/var/lib/postgresql/data
   backend:
+    container_name: backend-container
     env_file: ./.env
     build:
       context: ./backend
       dockerfile: ./Dockerfile
     ports:
       - 3000:3000
+    networks:
+      - pgsql-network
     environment:
-      DATABASE_URL: postgres://test:test@localhost:15432/test
+      DATABASE_URL: postgres://test:test@pgsql-container:5432/test
       PORT: 3000
+networks:
+  pgsql-network:
+    external: true
