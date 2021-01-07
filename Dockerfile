@@ -7,7 +7,7 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
 WORKDIR /app
-COPY . .
+COPY ./backend .
 RUN go build main.go
 
 FROM alpine:latest

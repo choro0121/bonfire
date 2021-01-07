@@ -15,3 +15,10 @@
 
 ## Release image
 1. `heroku container:release web`
+
+# Heroku config
+## Push .env
+1. `heroku config:push`
+
+## Pull .env
+1. `heroku config:pull`
