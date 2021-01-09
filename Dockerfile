@@ -1,4 +1,18 @@
-FROM golang:alpine as builder
+# frontend container
+FROM node:alpine as frontend
+
+WORKDIR /app
+
+RUN apk update
+
+COPY ./frontend .
+RUN yarn install \
+  && yarn generate
+
+# backend container
+FROM golang:alpine as backend
+
+WORKDIR /app
 
 RUN apk update \
   && apk add --no-cache git curl
@@ -6,12 +20,14 @@ RUN apk update \
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
-WORKDIR /app
+
 COPY ./backend .
 RUN go build main.go
 
+
+# runner container
 FROM alpine:latest as runner
-COPY --from=builder /app /app
+COPY --from=backend /app /app
 
 WORKDIR /app
 CMD ./main

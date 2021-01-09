@@ -14,29 +14,47 @@ services:
       POSTGRES_DB: test
     volumes:
       - pgsql-volume:/var/lib/postgresql/data
+
   backend:
     container_name: backend-container
     build:
       context: .
-      target: builder
-  runner:
-    container_name: runner-container
-    build:
-      context: .
-      target: runner
-    ports:
-      - 80:80
+      target: backend
     networks:
       - pgsql-network
     depends_on:
       - pgsql
+    env_file: ./.env
     environment:
       DATABASE_URL: postgres://test:test@pgsql-container:5432/test
-      HOST_URL: http://localhost:80
-      PORT: 80
+      HOST_URL: http://localhost:8000
+      PORT: 8000
+      HOST: 0.0.0.0
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: go run main.go
+
+  frontend:
+    container_name: frontend-container
+    build:
+      context: .
+      target: frontend
+    environment:
+      HOST: 0.0.0.0
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    command: sh -c "yarn install; yarn dev"
+
 volumes:
   pgsql-volume:
     driver: local
+
 networks:
   pgsql-network:
     external: true
