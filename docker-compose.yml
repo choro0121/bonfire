@@ -16,18 +16,24 @@ services:
       - pgsql-volume:/var/lib/postgresql/data
   backend:
     container_name: backend-container
-    env_file: ./.env
-    build: .
+    build:
+      context: .
+      target: builder
+  runner:
+    container_name: runner-container
+    build:
+      context: .
+      target: runner
     ports:
-      - 3000:3000
+      - 80:80
     networks:
       - pgsql-network
     depends_on:
       - pgsql
     environment:
       DATABASE_URL: postgres://test:test@pgsql-container:5432/test
-      HOST_URL: http://localhost:3000
-      PORT: 3000
+      HOST_URL: http://localhost:80
+      PORT: 80
 volumes:
   pgsql-volume:
     driver: local

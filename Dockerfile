@@ -10,7 +10,8 @@ WORKDIR /app
 COPY ./backend .
 RUN go build main.go
 
-FROM alpine:latest
+FROM alpine:latest as runner
 COPY --from=builder /app /app
 
-CMD /app/main
+WORKDIR /app
+CMD ./main
