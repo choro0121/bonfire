@@ -9,13 +9,15 @@ COPY ./frontend .
 RUN yarn install \
   && yarn generate
 
+
 # backend container
 FROM golang:alpine as backend
 
 WORKDIR /app
 
 RUN apk update \
-  && apk add --no-cache git curl
+  && apk add --no-cache git curl \
+  && go get -u github.com/cosmtrek/air
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux

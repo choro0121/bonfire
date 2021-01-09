@@ -1,9 +1,9 @@
-# Docker command
-## Build backend image
-1. `docker build -t backend .`
+# docker-compose
+## Build
+1. `docker-compose build`
 
-## Run backend binary
-1. `docker run -e "PORT=3000" -p 3000:3000 -t backend`
+## Run
+1. `docker-compose run frontend yarn dev`
 
 ## Create Docker network
 1. `docker network create pgsql-network`
