@@ -209,9 +209,11 @@ func jwtMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
         pathList := strings.Split(c.Path()[1:], "/")
         ver      := "/" + pathList[1]
         path     := "/" + strings.Join(pathList[2:], "/")
-        
+        method   := c.Request().Method
+
         for _, a := range apiList[ver] {
-            if a.Path == path {
+            log.Print(a.Path, path)
+            if a.Path == path && a.Method == method {
                 return a.Auth
             }
         }
