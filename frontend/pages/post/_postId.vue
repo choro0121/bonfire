@@ -8,6 +8,7 @@
 export default {
   methods: {
     clicked () {
+      console.log(this.$axios.$get(`/api/v1/posts/${this.$route.params.postId}`))
     }
   }
 }
