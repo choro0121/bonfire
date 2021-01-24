@@ -1,6 +1,6 @@
 <template>
-  <footer class="my-2">
-    <b-row align-h="center">
+  <footer>
+    <b-row align-h="center" align-content="center" style="height: 100%">
       <a href="/">
         <svg-loader id="snippethub-svg" :size="32" src="assets/svg/SnippetHub" />
       </a>

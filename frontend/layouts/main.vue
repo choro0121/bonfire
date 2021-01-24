@@ -30,6 +30,10 @@ header {
   z-index: 1;
 }
 
+footer {
+  height: 42px;
+}
+
 .container {
   max-width: 720px;
   height: 100vh;
