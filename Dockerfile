@@ -3,7 +3,8 @@ FROM node:alpine as frontend
 
 WORKDIR /app
 
-RUN apk update
+RUN apk update \
+  && apk add --no-cache python3 make g++
 
 COPY ./frontend .
 RUN yarn install \
