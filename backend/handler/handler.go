@@ -18,15 +18,18 @@ func New() {
     e.File("/", "view/index.html")
 
     // auth
-    e.POST("/signup", signup)
     e.File("/signup", "view/signup.html")
-    e.POST("/signup/:provider", signupProvider)
+    e.POST("/signup/mail", signupEmail)
+    e.POST("/signup/mail/:temp_id", registerEmailUser)
     e.File("/signup/:provider", "view/signupProvider.html")
-    e.POST("/login", login)
+    e.POST("/signup/:provider/:temp_id", registerOAuthUser)
+
+    e.POST("/login", signinEmail)
     e.File("/login", "view/login.html")
     e.GET("/auth/:provider", authProvider)
     e.GET("/auth/:provider/callback", authProviderCallback)
     e.GET("/logout/:provider", logoutProvider)
+    e.File("/authorized", "view/authorized.html")
 
     // api
     api := e.Group("/api")

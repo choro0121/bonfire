@@ -26,6 +26,7 @@ import (
     "crypto/rand"
     "encoding/base64"
     "golang.org/x/crypto/scrypt"
+    "github.com/google/uuid"
 
     "bonfire/model"
 )
@@ -37,6 +38,10 @@ func init() {
         google.New(os.Getenv("OAUTH_GOOGLE_KEY"), os.Getenv("OAUTH_GOOGLE_SECRET"), url + "/auth/google/callback"),
         github.New(os.Getenv("OAUTH_GITHUB_KEY"), os.Getenv("OAUTH_GITHUB_SECRET"), url + "/auth/github/callback"),
     )
+}
+
+func makeUuid() string {
+    return strings.Replace(uuid.New().String(), "-", "", -1)
 }
 
 const (
@@ -99,7 +104,7 @@ func generateJwtToken(userId int) (string, error) {
     // create token
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-    return token.SignedString(os.Getenv("JWT_SECRET_KEY"))
+    return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 }
 
 func parseJwtToken(tokenString string) (int, error) {
@@ -148,12 +153,58 @@ func parseJwtToken(tokenString string) (int, error) {
     return userId, err
 }
 
+func authorizedRedirect(c echo.Context, user *model.User) error {
+    // generate jwt token by user_id
+    tokenString, err := generateJwtToken(user.UserId)
+    if err != nil {
+        return err
+    }
 
-func signup(c echo.Context) error {
+    // redirect with token
+    return c.Redirect(http.StatusFound, "/authorized?token=" + tokenString)
+}
+
+func signupEmail(c echo.Context) error {
+    // get form value
+    formMail := c.FormValue("mail")
+    
+    // check user
+    _, err := model.GetUser(&model.User{Mail: formMail})
+    if err == nil {
+        return fmt.Errorf("already exist %s", formMail)
+    }
+
+    // check temp user
+    tempUser, err := model.GetTempEmailUser(&model.TempEmailUser{Mail: formMail})
+    if err == nil {
+        model.DeleteTempEmailUser(tempUser)
+    }
+
+    // create temp user
+    tempUser, err = model.CreateTempEmailUser(&model.TempEmailUser{
+        TempEmailUserId: makeUuid(),
+        Mail: formMail,
+    })
+    if err != nil {
+        return err
+    }
+
+    return c.String(http.StatusOK, tempUser.TempEmailUserId)
+}
+
+func registerEmailUser(c echo.Context) error {
+    // get temp user id
+    tempUserId := c.Param("temp_id")
+
     // get form value
     formUsername := c.FormValue("username")
-    formMail     := c.FormValue("mail")
     formPassword := c.FormValue("password")
+
+    // get temp user
+    tempUser, err := model.GetTempEmailUser(&model.TempEmailUser{TempEmailUserId: tempUserId})
+    if err != nil {
+        return err
+    }
 
     // hash password
     hash, err := encodePassword(formPassword)
@@ -164,7 +215,7 @@ func signup(c echo.Context) error {
     // create user
     user := &model.User{
         Username: formUsername,
-        Mail:     formMail,
+        Mail:     tempUser.Mail,
     }
     user, _, err = model.CreateUserWithPassword(user, &model.Password{
         Hash: hash,
@@ -173,54 +224,17 @@ func signup(c echo.Context) error {
         return fmt.Errorf("create user failed")
     }
 
-    // generate jwt token by user_id
-    tokenString, err := generateJwtToken(user.UserId)
-    if err != nil {
-        return fmt.Errorf("generate jwt token failed")
-    }
-
-    // redirect with token
-    return c.Redirect(http.StatusFound, "/?token=" + tokenString)
-}
-
-func signupProvider(c echo.Context) error {
-    // get extern_id from cookie
-    externId, err := c.Cookie("extern_id")
-    if err != nil {
-        return err // todo: redirect to begin oauth
-    }
-
-    // get provider name
-    provider := c.Param("provider")
-
-    // get form value
-    formUsername := c.FormValue("username")
-    formMail := c.FormValue("mail")
-
-    // create user
-    user := &model.User{
-        Username: formUsername,
-        Mail:     formMail,
-    }
-    user, _, err = model.CreateUserWithOAuth(user, &model.OAuth{
-        Provider:  provider,
-        ExternId: externId.Value,
-    })
-    if err != nil {
-        return err
-    }
-
-    // generate jwt token by user_id
-    tokenString, err := generateJwtToken(user.UserId)
+    // remove temp user
+    _, err = model.DeleteTempEmailUser(tempUser)
     if err != nil {
         return err
     }
 
     // redirect with token
-    return c.Redirect(http.StatusFound, "/?token=" + tokenString)
+    return authorizedRedirect(c, user)
 }
 
-func login(c echo.Context) error {
+func signinEmail(c echo.Context) error {
     // get form value
     formUsername := c.FormValue("username")
     formPassword := c.FormValue("password")
@@ -243,26 +257,14 @@ func login(c echo.Context) error {
         return fmt.Errorf("confirm password failed")
     }
 
-    // generate jwt token by user_id
-    tokenString, err := generateJwtToken(user.UserId)
-    if err != nil {
-        return err
-    }
-
     // redirect with token
-    return c.Redirect(http.StatusFound, "/?token=" + tokenString)
+    return authorizedRedirect(c, user)
 }
 
 func authProvider(c echo.Context) error {
     provider := c.Param("provider")
     req := gothic.GetContextWithProvider(c.Request(), provider)
     res := c.Response().Writer
-
-    // already auth
-    _, err := gothic.CompleteUserAuth(res, req)
-    if err == nil {
-        c.Redirect(http.StatusFound, "/")
-    }
 
     // begin
     gothic.BeginAuthHandler(res, req)
@@ -272,7 +274,7 @@ func authProvider(c echo.Context) error {
 
 func authProviderCallback(c echo.Context) error {
     provider := c.Param("provider")
-    req := gothic.GetContextWithProvider(c.Request(), provider)
+    req := c.Request()
     res := c.Response().Writer
 
     // get user
@@ -280,29 +282,37 @@ func authProviderCallback(c echo.Context) error {
     if err != nil {
         return err
     }
+    externId := providerAuth.UserID
 
     // check acount exist
-    oauth, err := model.GetOAuth(&model.OAuth{Provider: provider, ExternId: providerAuth.UserID})
+    oauth, err := model.GetOAuth(&model.OAuth{
+        Provider: provider,
+        ExternId: externId,
+    })
     if err != nil {
         // not exist acount, create acount
 
-        // default user name
-        name := providerAuth.Name
-        if provider == "google" {
-            at := strings.Index(providerAuth.Email, "@")
-            name = providerAuth.Email[:at]
+        // check temp user
+        tempUser, err := model.GetTempOAuthUser(&model.TempOAuthUser{
+            Provider: provider,
+            ExternId: externId,
+        })
+        if err == nil {
+            model.DeleteTempOAuthUser(tempUser)
         }
 
-        // write oauth user id to cookie
-        c.SetCookie(&http.Cookie{
-            Name: "extern_id",
-            Value: providerAuth.UserID,
-            Expires: time.Now().Add(24 * time.Hour),
-            Path: "/signup",
+        // create temp user
+        tempUser, err = model.CreateTempOAuthUser(&model.TempOAuthUser{
+            TempOAuthUserId: makeUuid(),
+            Provider:        provider,
+            ExternId:        externId,
         })
+        if err != nil {
+            return err
+        }
 
         // set default user param to query param
-        url := fmt.Sprintf("/signup/%s?username=%v&mail=%v", provider, name, providerAuth.Email)
+        url := fmt.Sprintf("/signup/%v", tempUser.TempOAuthUserId)
 
         return c.Redirect(http.StatusFound, url)
     } else {
@@ -312,15 +322,46 @@ func authProviderCallback(c echo.Context) error {
             return err
         }
 
-        // generate jwt token by user_id
-        tokenString, err := generateJwtToken(user.UserId)
-        if err != nil {
-            return err
-        }
-
         // redirect with token
-        return c.Redirect(http.StatusFound, "/?token=" + tokenString)
+        return authorizedRedirect(c, user)
     }
+}
+
+func registerOAuthUser(c echo.Context) error {
+    // get temp user id
+    tempUserId := c.Param("temp_id")
+
+    // get form value
+    formUsername := c.FormValue("username")
+    formMail := c.FormValue("mail")
+
+    // get temp user
+    tempUser, err := model.GetTempOAuthUser(&model.TempOAuthUser{TempOAuthUserId: tempUserId})
+    if err != nil {
+        return err
+    }
+
+    // create user
+    user := &model.User{
+        Username: formUsername,
+        Mail:     formMail,
+    }
+    user, _, err = model.CreateUserWithOAuth(user, &model.OAuth{
+        Provider: tempUser.Provider,
+        ExternId: tempUser.ExternId,
+    })
+    if err != nil {
+        return err
+    }
+
+    // remove temp user
+    _, err = model.DeleteTempOAuthUser(tempUser)
+    if err != nil {
+        return err
+    }
+
+    // redirect with token
+    return authorizedRedirect(c, user)
 }
 
 func logoutProvider(c echo.Context) error {

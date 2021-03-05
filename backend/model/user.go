@@ -7,6 +7,19 @@ import (
 )
 
 type (
+    TempEmailUser struct {
+        TempEmailUserId string          `gorm:"unique"`
+        Mail            string
+        CreateAt        time.Time       `gorm:"autoCreateTime"`
+    }
+
+    TempOAuthUser struct {
+        TempOAuthUserId string          `gorm:"unique"`
+        Provider        string          `gorm:"not null"`
+        ExternId        string          `gorm:"not null"`
+        CreateAt        time.Time       `gorm:"autoCreateTime"`
+    }
+
     User struct {
         UserId          int             `gorm:"primary_key; auto_increment"`
         Username        string          `gorm:"unique"`
@@ -38,6 +51,42 @@ type (
         UpdateAt        time.Time       `gorm:"autoUpdateTime"`
     }
 )
+
+func CreateTempEmailUser(tempEmailUser *TempEmailUser) (*TempEmailUser, error) {
+    err := db.Create(tempEmailUser).Error
+
+    return tempEmailUser, err
+}
+
+func GetTempEmailUser(tempEmailUser *TempEmailUser) (*TempEmailUser, error) {
+    err := db.Model(tempEmailUser).Where(tempEmailUser).First(tempEmailUser).Error
+
+    return tempEmailUser, err
+}
+
+func DeleteTempEmailUser(tempEmailUser *TempEmailUser) (*TempEmailUser, error) {
+    err := db.Model(tempEmailUser).Where("temp_email_user_id = ?", tempEmailUser.TempEmailUserId).Delete(&TempEmailUser{}).Error
+
+    return tempEmailUser, err
+}
+
+func CreateTempOAuthUser(tempOAuthUser *TempOAuthUser) (*TempOAuthUser, error) {
+    err := db.Create(tempOAuthUser).Error
+
+    return tempOAuthUser, err
+}
+
+func GetTempOAuthUser(tempOAuthUser *TempOAuthUser) (*TempOAuthUser, error) {
+    err := db.Model(tempOAuthUser).Where(tempOAuthUser).First(tempOAuthUser).Error
+
+    return tempOAuthUser, err
+}
+
+func DeleteTempOAuthUser(tempOAuthUser *TempOAuthUser) (*TempOAuthUser, error) {
+    err := db.Model(tempOAuthUser).Where("temp_o_auth_user_id = ?", tempOAuthUser.TempOAuthUserId).Delete(&TempOAuthUser{}).Error
+
+    return tempOAuthUser, err
+}
 
 func CreateUserWithPassword(user *User, password *Password) (*User, *Password, error) {
     // create user
