@@ -25,7 +25,6 @@
         </b-button>
       </b-input-group-append>
     </b-input-group>
-
   </div>
 </template>
 
