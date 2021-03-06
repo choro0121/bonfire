@@ -6,12 +6,10 @@
     </h1>
 
     <div>
-      {{ body }}
+      {{ desc }}
     </div>
 
     <code-editor v-model="code" :lang="lang" readonly />
-
-    <b-button @click="clicked" />
 
   </div>
 </template>
@@ -24,28 +22,23 @@ export default {
   components: {
     CodeEditor
   },
-  props: {
-    title: {
-      type: String,
-      default: 'hogefuga'
-    },
-    body: {
-      type: String,
-      default: 'piyoooooooooooooo'
-    },
-    lang: {
-      type: String,
-      default: 'js'
-    },
-    code: {
-      type: String,
-      default: 'console.log("aaa")'
+  data () {
+    return {
+      title: '',
+      desc: '',
+      lang: '',
+      code: ''
     }
   },
-  methods: {
-    clicked () {
-      console.log(this.$axios.$get(`/api/v1/posts/${this.$route.params.postId}`))
-    }
+  created () {
+    this.$axios.$get(`/api/v1/posts/${this.$route.params.postId}`)
+      .then((res) => {
+        console.log(res)
+        this.title = res.title
+        this.desc = res.description
+        this.lang = res.language
+        this.code = res.code
+      })
   }
 }
 </script>

@@ -7,7 +7,7 @@
 
       <b-navbar-nav class="ml-auto">
         <b-row align-v="center">
-          <b-button variant="primary" size="sm">
+          <b-button variant="primary" size="sm" to="/post/new">
             <b-icon icon="pencil-square" aria-hidden="true" />
             ポスト
           </b-button>

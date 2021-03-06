@@ -10,6 +10,7 @@ type (
         PostId          int             `gorm:"primary_key; auto_increment" json:"post_id"`
         UserId          int             `gorm:"not null" json:"user_id"`
         Title           string          `gorm:"not null" json:"title"`
+        Language        string          `gorm:"not null" json:"language"`
         Description     string          `json:"description"`
         Code            string          `gorm:"not null" json:"code"`
         CreatedAt       time.Time       `gorm:"autoCreateTime"`

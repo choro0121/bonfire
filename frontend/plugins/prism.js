@@ -17,7 +17,7 @@ function load (lang) {
       }
       import('prismjs/components/prism-' + lang)
       loaded.push(lang)
-      console.log(lang, languages[lang])
+      // console.log(lang, languages[lang])
     }
   }
 }
