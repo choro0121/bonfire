@@ -240,14 +240,14 @@ func jwtMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func defaultHandler(c echo.Context) error {
-    log.Print(c.Get("user_id").(int))
+    log.Print(c.Get("user_id").(string))
     return c.String(http.StatusOK, "defaultHandler")
 }
 
 
 func newPost(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // body
     post := new(model.Post)
@@ -329,7 +329,7 @@ func deletePost(c echo.Context) error {
 
 func getBookmarks(c echo.Context) error {
     // query
-    userId, err := strconv.Atoi(c.QueryParam("user_id"))
+    userId := c.QueryParam("user_id")
     postId, err := strconv.Atoi(c.QueryParam("post_id"))
     offset, err := strconv.Atoi(c.QueryParam("offset"))
 
@@ -347,7 +347,7 @@ func getBookmarks(c echo.Context) error {
 
 func newBookmark(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -369,7 +369,7 @@ func newBookmark(c echo.Context) error {
 
 func deleteBookmark(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -392,7 +392,7 @@ func deleteBookmark(c echo.Context) error {
 
 func getGoods(c echo.Context) error {
     // query
-    userId, err := strconv.Atoi(c.QueryParam("user_id"))
+    userId := c.QueryParam("user_id")
     postId, err := strconv.Atoi(c.QueryParam("post_id"))
     offset, err := strconv.Atoi(c.QueryParam("offset"))
 
@@ -410,7 +410,7 @@ func getGoods(c echo.Context) error {
 
 func newGood(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -432,7 +432,7 @@ func newGood(c echo.Context) error {
 
 func deleteGood(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -455,7 +455,7 @@ func deleteGood(c echo.Context) error {
 
 func getComments(c echo.Context) error {
     // query
-    userId, err := strconv.Atoi(c.QueryParam("user_id"))
+    userId := c.QueryParam("user_id")
     postId, err := strconv.Atoi(c.QueryParam("post_id"))
     offset, err := strconv.Atoi(c.QueryParam("offset"))
 
@@ -473,7 +473,7 @@ func getComments(c echo.Context) error {
 
 func newComment(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -501,7 +501,7 @@ func newComment(c echo.Context) error {
 
 func updateComment(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -534,7 +534,7 @@ func updateComment(c echo.Context) error {
 
 func deleteComment(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     postId, err := strconv.Atoi(c.Param("post_id"))
@@ -561,7 +561,7 @@ func deleteComment(c echo.Context) error {
 
 
 func getUsers(c echo.Context) error {
-    log.Print(c.Get("user_id").(int))
+    log.Print(c.Get("user_id").(string))
     return c.String(http.StatusOK, "defaultHandler")
 }
 
@@ -631,7 +631,7 @@ func getUser(c echo.Context) error {
     }
 
     return c.JSON(http.StatusOK, struct {
-        UserId      int         `json:"user_id"`
+        UserId      string      `json:"user_id"`
         Username    string      `json:"username"`
         Bio         string      `json:"bio"`
         Company     string      `json:"company"`
@@ -657,7 +657,7 @@ func getUser(c echo.Context) error {
 
 func newFollow(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     username := c.Param("username")
@@ -684,7 +684,7 @@ func newFollow(c echo.Context) error {
 
 func deleteFollow(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // path
     username := c.Param("username")
@@ -712,7 +712,7 @@ func deleteFollow(c echo.Context) error {
 
 func getSelf(c echo.Context) error {
     // token
-    userId := c.Get("user_id").(int)
+    userId := c.Get("user_id").(string)
 
     // read
     user, err := model.GetUser(&model.User{

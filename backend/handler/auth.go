@@ -5,7 +5,6 @@ import (
     "fmt"
     "time"
     "strings"
-    "strconv"
 
     // oauth
     "github.com/markbates/goth"
@@ -26,22 +25,17 @@ import (
     "crypto/rand"
     "encoding/base64"
     "golang.org/x/crypto/scrypt"
-    "github.com/google/uuid"
 
     "bonfire/model"
 )
 
 func init() {
-    url := os.Getenv("HOST_URL")
+    // url := os.Getenv("HOST_URL")
 
     goth.UseProviders(
-        google.New(os.Getenv("OAUTH_GOOGLE_KEY"), os.Getenv("OAUTH_GOOGLE_SECRET"), url + "/auth/google/callback"),
-        github.New(os.Getenv("OAUTH_GITHUB_KEY"), os.Getenv("OAUTH_GITHUB_SECRET"), url + "/auth/github/callback"),
+        google.New(os.Getenv("OAUTH_GOOGLE_KEY"), os.Getenv("OAUTH_GOOGLE_SECRET"), "http://192.168.197.130:8000/auth/google/callback"),
+        github.New(os.Getenv("OAUTH_GITHUB_KEY"), os.Getenv("OAUTH_GITHUB_SECRET"), "http://192.168.197.130:8000/auth/github/callback"),
     )
-}
-
-func makeUuid() string {
-    return strings.Replace(uuid.New().String(), "-", "", -1)
 }
 
 const (
@@ -93,11 +87,11 @@ func comparePassword(password string, encode string) error {
     }
 }
 
-func generateJwtToken(userId int) (string, error) {
+func generateJwtToken(userId string) (string, error) {
     now := time.Now()
     
     claims := new(jwt.StandardClaims)
-    claims.Subject   = strconv.Itoa(userId)
+    claims.Subject   = userId
     claims.IssuedAt  = now.Unix()
     claims.ExpiresAt = now.Add(24 * time.Hour).Unix()
 
@@ -107,10 +101,10 @@ func generateJwtToken(userId int) (string, error) {
     return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 }
 
-func parseJwtToken(tokenString string) (int, error) {
+func parseJwtToken(tokenString string) (string, error) {
     // super user test mode
     if tokenString == "super" {
-        return 1, nil
+        return "", nil
     }
 
     // trim 'Bearer'
@@ -126,31 +120,25 @@ func parseJwtToken(tokenString string) (int, error) {
 
     // error handling
     if err != nil {
-        return 0, err
+        return "", err
     }
     if token == nil {
-        return 0, fmt.Errorf("token is nil")
+        return "", fmt.Errorf("token is nil")
     }
 
     // get claims
     claims, ok := token.Claims.(*jwt.StandardClaims)
     if !ok {
-        return 0, fmt.Errorf("not found claims in %s", tokenString)
+        return "", fmt.Errorf("not found claims in %s", tokenString)
     }
 
     // validate
     err = claims.Valid()
     if err != nil {
-        return 0, err
+        return "", err
     }
 
-    // get user
-    userId, err := strconv.Atoi(claims.Subject)
-    if err != nil {
-        return 0, fmt.Errorf("jwt subject not integer %s", claims.Subject)
-    }
-
-    return userId, err
+    return claims.Subject, err
 }
 
 func authorizedRedirect(c echo.Context, user *model.User) error {
@@ -167,43 +155,17 @@ func authorizedRedirect(c echo.Context, user *model.User) error {
 func signupEmail(c echo.Context) error {
     // get form value
     formMail := c.FormValue("mail")
-    
-    // check user
-    _, err := model.GetUser(&model.User{Mail: formMail})
-    if err == nil {
-        return fmt.Errorf("already exist %s", formMail)
-    }
-
-    // check temp user
-    tempUser, err := model.GetTempEmailUser(&model.TempEmailUser{Mail: formMail})
-    if err == nil {
-        model.DeleteTempEmailUser(tempUser)
-    }
-
-    // create temp user
-    tempUser, err = model.CreateTempEmailUser(&model.TempEmailUser{
-        TempEmailUserId: makeUuid(),
-        Mail: formMail,
-    })
-    if err != nil {
-        return err
-    }
-
-    return c.String(http.StatusOK, tempUser.TempEmailUserId)
-}
-
-func registerEmailUser(c echo.Context) error {
-    // get temp user id
-    tempUserId := c.Param("temp_id")
-
-    // get form value
     formUsername := c.FormValue("username")
     formPassword := c.FormValue("password")
 
-    // get temp user
-    tempUser, err := model.GetTempEmailUser(&model.TempEmailUser{TempEmailUserId: tempUserId})
-    if err != nil {
-        return err
+    // check user
+    _, err := model.GetUser(&model.User{Mail: formMail})
+    if err == nil {
+        return fmt.Errorf("already exist mail %s", formMail)
+    }
+    _, err = model.GetUser(&model.User{Username: formUsername})
+    if err == nil {
+        return fmt.Errorf("already exist user %s", formUsername)
     }
 
     // hash password
@@ -215,26 +177,27 @@ func registerEmailUser(c echo.Context) error {
     // create user
     user := &model.User{
         Username: formUsername,
-        Mail:     tempUser.Mail,
+        Mail:     formMail,
     }
-    user, _, err = model.CreateUserWithPassword(user, &model.Password{
-        Hash: hash,
-    })
+    user, err = model.CreateUser(user)
     if err != nil {
         return fmt.Errorf("create user failed")
     }
 
-    // remove temp user
-    _, err = model.DeleteTempEmailUser(tempUser)
+    // register password
+    _, err = model.CreatePassword(&model.Password{
+        UserId: user.UserId,
+        Hash: hash,
+    })
     if err != nil {
-        return err
+        return fmt.Errorf("register password failed")
     }
 
     // redirect with token
     return authorizedRedirect(c, user)
 }
 
-func signinEmail(c echo.Context) error {
+func loginEmail(c echo.Context) error {
     // get form value
     formUsername := c.FormValue("username")
     formPassword := c.FormValue("password")
@@ -248,7 +211,7 @@ func signinEmail(c echo.Context) error {
     // confirm password
     password, err := model.GetPassword(&model.Password{UserId: user.UserId})
     if err != nil {
-        return fmt.Errorf("not exist password %d", user.UserId)
+        return fmt.Errorf("not exist password %s", user.UserId)
     }
 
     // check match
@@ -289,75 +252,58 @@ func authProviderCallback(c echo.Context) error {
         Provider: provider,
         ExternId: externId,
     })
-    if err != nil {
-        // not exist acount, create acount
 
-        // check temp user
-        tempUser, err := model.GetTempOAuthUser(&model.TempOAuthUser{
+    // check user acount
+    if err != nil {
+        // create oauth
+        oauth, err = model.CreateOAuth(&model.OAuth{
             Provider: provider,
             ExternId: externId,
         })
-        if err == nil {
-            model.DeleteTempOAuthUser(tempUser)
-        }
 
-        // create temp user
-        tempUser, err = model.CreateTempOAuthUser(&model.TempOAuthUser{
-            TempOAuthUserId: makeUuid(),
-            Provider:        provider,
-            ExternId:        externId,
-        })
         if err != nil {
-            return err
+            return fmt.Errorf("register oauth failed")
         }
-
-        // set default user param to query param
-        url := fmt.Sprintf("/signup/%v", tempUser.TempOAuthUserId)
-
-        return c.Redirect(http.StatusFound, url)
     } else {
-        // exist user in oauth table, login
-        user, err := model.GetUser(&model.User{UserId: oauth.UserId})
-        if err != nil {
-            return err
-        }
+        user, err := model.GetUser(&model.User{
+            UserId: oauth.UserId,
+        })
 
-        // redirect with token
-        return authorizedRedirect(c, user)
+        // login when exist user
+        if err == nil {
+            return authorizedRedirect(c, user)
+        }
     }
+
+    // redirect register
+    return c.Redirect(http.StatusFound, fmt.Sprintf("/signup/%v/%v", provider, oauth.UserId))
 }
 
 func registerOAuthUser(c echo.Context) error {
     // get temp user id
-    tempUserId := c.Param("temp_id")
+    userId := c.Param("user_id")
 
     // get form value
     formUsername := c.FormValue("username")
     formMail := c.FormValue("mail")
 
-    // get temp user
-    tempUser, err := model.GetTempOAuthUser(&model.TempOAuthUser{TempOAuthUserId: tempUserId})
+    // check acount exist
+    oauth, err := model.GetOAuth(&model.OAuth{
+        UserId: userId,
+    })
     if err != nil {
-        return err
+        return fmt.Errorf("not exist oauth %s", userId)
     }
 
     // create user
     user := &model.User{
+        UserId:   oauth.UserId,
         Username: formUsername,
         Mail:     formMail,
     }
-    user, _, err = model.CreateUserWithOAuth(user, &model.OAuth{
-        Provider: tempUser.Provider,
-        ExternId: tempUser.ExternId,
-    })
+    user, err = model.CreateUser(user)
     if err != nil {
-        return err
-    }
-
-    // remove temp user
-    _, err = model.DeleteTempOAuthUser(tempUser)
-    if err != nil {
-        return err
+        return fmt.Errorf("create user failed")
     }
 
     // redirect with token

@@ -32,8 +32,6 @@ func New() {
 
     // migrate
     db.Migrator().DropTable(
-        &TempEmailUser{},
-        &TempOAuthUser{},
         &User{},
         &Follow{},
         &OAuth{},
@@ -44,8 +42,6 @@ func New() {
         &Tag{},
         &Comment{},
     )
-    db.AutoMigrate(&TempEmailUser{})
-    db.AutoMigrate(&TempOAuthUser{})
     db.AutoMigrate(&User{})
     db.AutoMigrate(&Follow{})
     db.AutoMigrate(&OAuth{})

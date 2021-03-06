@@ -19,12 +19,11 @@ func New() {
 
     // auth
     e.File("/signup", "view/signup.html")
-    e.POST("/signup/mail", signupEmail)
-    e.POST("/signup/mail/:temp_id", registerEmailUser)
-    e.File("/signup/:provider", "view/signupProvider.html")
-    e.POST("/signup/:provider/:temp_id", registerOAuthUser)
+    e.POST("/signup", signupEmail)
+    e.File("/signup/:provider/:user_id", "view/signupProvider.html")
+    e.POST("/signup/:provider/:user_id", registerOAuthUser)
 
-    e.POST("/login", signinEmail)
+    e.POST("/login", loginEmail)
     e.File("/login", "view/login.html")
     e.GET("/auth/:provider", authProvider)
     e.GET("/auth/:provider/callback", authProviderCallback)

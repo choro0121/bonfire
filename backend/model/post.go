@@ -8,7 +8,7 @@ import (
 type (
     Post struct {
         PostId          int             `gorm:"primary_key; auto_increment" json:"post_id"`
-        UserId          int             `gorm:"not null" json:"user_id"`
+        UserId          string          `gorm:"not null" json:"user_id"`
         Title           string          `gorm:"not null" json:"title"`
         Language        string          `gorm:"not null" json:"language"`
         Description     string          `json:"description"`
@@ -19,13 +19,13 @@ type (
     }
 
     Bookmark struct {
-        UserId          int             `gorm:"not null"`
+        UserId          string          `gorm:"not null"`
         PostId          int             `gorm:"not null"`
         CreateAt        time.Time       `gorm:"autoCreateTime"`
     }
 
     Good struct {
-        UserId          int             `gorm:"not null"`
+        UserId          string          `gorm:"not null"`
         PostId          int             `gorm:"not null"`
         CreateAt        time.Time       `gorm:"autoCreateTime"`
     }
@@ -39,7 +39,7 @@ type (
     Comment struct {
         CommentId       int             `gorm:"primary_key; auto_increment" json:"comment_id"`
         PostId          int             `gorm:"not null"`
-        UserId          int             `gorm:"not null"`
+        UserId          string          `gorm:"not null"`
         Body            string          `gorm:"not null" json:"body"`
         CreateAt        time.Time       `gorm:"autoCreateTime"`
         UpdateAt        time.Time       `gorm:"autoUpdateTime"`

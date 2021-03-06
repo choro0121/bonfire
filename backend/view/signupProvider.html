@@ -6,30 +6,6 @@
         <input type="text" name="mail" id="mail">
         <input type="submit"value="登録">
     </form>
-
-    <script type="text/javascript">
-
-        function getQueryParams() {
-            let params = {}
-            let url = location.search.substring(1).split('&')
-
-            for (var i = 0; i < url.length; i++) {
-                let param = url[i].split('=')
-                params[param[0]] = param[1]
-            }
-
-            return params
-        }
-
-        window.onload = function () {
-            // query param to object
-            let params = getQueryParams()
-
-            // write query param to form value
-            document.getElementById("username").value = params.username
-            document.getElementById("mail").value     = params.mail
-        }
-    </script>
 </body>
 </html>
 
