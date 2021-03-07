@@ -5,13 +5,20 @@
       <b-col>
         <div>@hogehoge</div>
         <div class="date">
-          2020-12-20 03:00
+          {{post.CreatedAt}}
         </div>
       </b-col>
     </b-row>
-    <h3 class="title">
-      JavaScriptのforEachの書き方
-    </h3>
+    <b-btn
+      variant="link"
+      style="color: var(--secondary); font-size: 14px; padding: 0px;"
+      @click="open"
+    >
+      <h3 class="title">
+        {{post.title}}
+      </h3>
+    </b-btn>
+
     <b-row align-v="center">
       <b-icon icon="suit-heart-fill" class="mx-1" />
       {{ good }}
@@ -19,10 +26,7 @@
       {{ bookmark }}
       <b-icon icon="tags-fill" class="mx-1" />
       <b-button class="mx-1" variant="outline-secondary" size="sm">
-        JavaScript
-      </b-button>
-      <b-button class="mx-1" variant="outline-secondary" size="sm">
-        jQuery
+        {{post.language}}
       </b-button>
     </b-row>
   </div>
@@ -31,6 +35,10 @@
 <script>
 export default {
   props: {
+    post: {
+      type: Object,
+      default: () => ({})
+    },
     good: {
       type: Number,
       default: 0
@@ -38,6 +46,11 @@ export default {
     bookmark: {
       type: Number,
       default: 0
+    }
+  },
+  methods: {
+    open () {
+      this.$router.push(`/post/${this.post.post_id}`)
     }
   }
 }

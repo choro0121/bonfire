@@ -28,7 +28,7 @@ var apiList = map[string][]Api{
             Path: "/posts",
             Method: http.MethodGet,
             Auth: false,
-            Handler: defaultHandler,
+            Handler: getPosts,
         },
         Api{
             Path: "/posts",
@@ -264,6 +264,19 @@ func newPost(c echo.Context) error {
     }
 
     return c.JSON(http.StatusOK, post)
+}
+
+func getPosts(c echo.Context) error {
+    // query
+    offset, err := strconv.Atoi(c.QueryParam("offset"))
+
+    // read
+    posts, err := model.GetPosts(offset, &model.Post{})
+    if err != nil {
+        return err
+    }
+
+    return c.JSON(http.StatusOK, posts)
 }
 
 func getPost(c echo.Context) error {
