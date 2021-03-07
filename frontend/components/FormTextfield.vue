@@ -4,10 +4,12 @@
       {{ label }}<span v-if="need" style="color: #E74C3C;">*</span>
     </div>
     <b-form-input
-      v-model="data"
+      :value="value"
       :state="state"
+      :name="name"
       :type="formtype"
       size="sm"
+      @input="input"
     />
     <b-form-invalid-feedback>
       {{ feedback }}
@@ -26,6 +28,10 @@ export default {
       type: String,
       default: 'text'
     },
+    name: {
+      type: String,
+      default: ''
+    },
     need: {
       type: Boolean,
       default: false
@@ -34,7 +40,7 @@ export default {
       type: Boolean,
       default: true
     },
-    input: {
+    value: {
       type: String,
       default: ''
     }
@@ -45,27 +51,6 @@ export default {
     }
   },
   computed: {
-    data: {
-      get () {
-        return this.input
-      },
-      set (value) {
-        if (this.validation !== true) {
-          this.state = null
-        } else if (value === '') {
-          this.state = null
-        } else if (this.formtype === 'email') {
-          this.state = this.validate(value, /^[A-Za-z0-9]{1}[A-Za-z0-9_.-]*@{1}[A-Za-z0-9_.-]{1,}\.[A-Za-z0-9]{1,}$/)
-        } else if (this.formtype === 'password') {
-          this.state = this.validate(value, /^(?=.*?[a-z])(?=.*?\d)[a-z\d]{8,100}$/i)
-        } else {
-          this.state = null
-        }
-
-        this.$emit('input', value)
-        this.$emit('state', this.state)
-      }
-    },
     feedback () {
       if (this.formtype === 'email') {
         return '無効なメール形式です'
@@ -77,6 +62,22 @@ export default {
     }
   },
   methods: {
+    input (value) {
+      if (this.validation !== true) {
+        this.state = null
+      } else if (value === '') {
+        this.state = null
+      } else if (this.formtype === 'email') {
+        this.state = this.validate(value, /^[A-Za-z0-9]{1}[A-Za-z0-9_.-]*@{1}[A-Za-z0-9_.-]{1,}\.[A-Za-z0-9]{1,}$/)
+      } else if (this.formtype === 'password') {
+        this.state = this.validate(value, /^(?=.*?[a-z])(?=.*?\d)[a-z\d]{8,100}$/i)
+      } else {
+        this.state = null
+      }
+
+      this.$emit('input', value)
+      this.$emit('state', this.state)
+    },
     validate (text, regex) {
       if (text) {
         if (!text.match(regex)) {

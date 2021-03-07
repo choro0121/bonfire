@@ -193,8 +193,14 @@ func signupEmail(c echo.Context) error {
         return fmt.Errorf("register password failed")
     }
 
-    // redirect with token
-    return authorizedRedirect(c, user)
+    // generate jwt token by user_id
+    tokenString, err := generateJwtToken(user.UserId)
+    if err != nil {
+        return err
+    }
+
+    // return jwt
+    return c.String(http.StatusOK, tokenString)
 }
 
 func loginEmail(c echo.Context) error {
@@ -220,8 +226,14 @@ func loginEmail(c echo.Context) error {
         return fmt.Errorf("confirm password failed")
     }
 
-    // redirect with token
-    return authorizedRedirect(c, user)
+    // generate jwt token by user_id
+    tokenString, err := generateJwtToken(user.UserId)
+    if err != nil {
+        return err
+    }
+
+    // return jwt
+    return c.String(http.StatusOK, tokenString)
 }
 
 func authProvider(c echo.Context) error {
@@ -306,8 +318,14 @@ func registerOAuthUser(c echo.Context) error {
         return fmt.Errorf("create user failed")
     }
 
-    // redirect with token
-    return authorizedRedirect(c, user)
+    // generate jwt token by user_id
+    tokenString, err := generateJwtToken(user.UserId)
+    if err != nil {
+        return err
+    }
+
+    // return jwt
+    return c.String(http.StatusOK, tokenString)
 }
 
 func logoutProvider(c echo.Context) error {

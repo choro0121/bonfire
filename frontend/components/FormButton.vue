@@ -1,6 +1,12 @@
 <template>
   <div>
-    <b-button class="label mt-2" variant="primary" block>
+    <b-button
+      class="label mt-2"
+      variant="primary"
+      type="submit"
+      block
+      @click="$emit('click', $event)"
+    >
       {{ label }}
     </b-button>
   </div>

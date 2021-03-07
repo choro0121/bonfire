@@ -21,7 +21,6 @@
     <b-btn variant="outline-secondary">
       下書き保存
     </b-btn>
-
   </div>
 </template>
 

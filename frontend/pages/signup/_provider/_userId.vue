@@ -18,76 +18,43 @@
       formtype="email"
       :need="true"
     />
-    <form-textfield
-      v-model="password"
-      class="my-2"
-      label="パスワード"
-      formtype="password"
-      :need="true"
-    />
     <form-button
       class="my-2"
       label="アカウントを作成"
-      @click="signup"
+      @click="clicked"
     />
-
-    <hr class="my-3" width="100%">
-
-    <svg-button
-      class="my-2"
-      label="Googleアカウントで登録"
-      src="assets/svg/Google"
-      color="#FFFFFF"
-      font="var(--secondary)"
-      border="#E4E4E4"
-    />
-    <svg-button
-      class="my-2"
-      label="GitHubアカウントで登録"
-      src="assets/svg/GitHub"
-      color="#444444"
-      font="#FFFFFF"
-      border="#363636"
-    />
-
-    <b-button
-      class="my-2"
-      variant="link"
-      style="color: var(--secondary); font-size: 14px; text-decoration: underline;"
-      to="/login"
-    >
-      アカウントをお持ちの方
-    </b-button>
   </div>
 </template>
 
 <script>
 import FormTextfield from '@/components/FormTextfield.vue'
 import FormButton from '@/components/FormButton.vue'
-import SvgButton from '@/components/SvgButton.vue'
 
 export default {
   layout: 'auth',
   components: {
     FormTextfield,
-    FormButton,
-    SvgButton
+    FormButton
   },
   data () {
     return {
       username: '',
-      email: '',
-      password: ''
+      email: ''
     }
   },
+  validate ({ params, redirect }) {
+    if (params.userId === undefined) {
+      redirect('/signup')
+    }
+    return true
+  },
   methods: {
-    signup () {
+    clicked () {
       const forms = new FormData()
       forms.append('username', this.username)
-      forms.append('mail', this.email)
-      forms.append('password', this.password)
+      forms.append('email', this.email)
 
-      this.$axios.$post('/signup', forms)
+      this.$axios.$post(`/signup/${this.$route.params.provider}/${this.$route.params.userId}`, forms)
         .then((res) => {
           localStorage.setItem('token', res)
           if (this.$route.query.continue === undefined) {

@@ -1,6 +1,12 @@
 <template>
   <div>
-    <b-button class="label" block style="height: 48px;" :style="{background: color, color: font, borderColor: border}">
+    <b-button
+      class="label"
+      block
+      style="height: 48px;"
+      :style="{background: color, color: font, borderColor: border}"
+      @click="$emit('click', $event)"
+    >
       <b-row>
         <div style="width: 48px;">
           <svg-loader class="mx-3" :size="20" :src="src" />

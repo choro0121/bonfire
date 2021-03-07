@@ -9,7 +9,6 @@
     </div>
 
     <code-editor v-model="code" :lang="lang" readonly />
-
   </div>
 </template>
 
@@ -32,7 +31,6 @@ export default {
   created () {
     this.$axios.$get(`/api/v1/posts/${this.$route.params.postId}`)
       .then((res) => {
-        console.log(res)
         this.title = res.title
         this.desc = res.description
         this.lang = res.language
